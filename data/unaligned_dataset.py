@@ -1,17 +1,17 @@
 import os.path
-import torchvision.transforms as transforms
 from data.base_dataset import BaseDataset, get_transform
-from data.image_folder import make_dataset
+from data.audio_folder import make_dataset, default_loader
 from PIL import Image
 import PIL
 import random
+from . import transforms
 
 class UnalignedDataset(BaseDataset):
     def initialize(self, opt):
         self.opt = opt
         self.root = opt.dataroot
-        self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')
-        self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')
+        self.dir_A = os.path.join(opt.dataroot, opt.fold + 'A')
+        self.dir_B = os.path.join(opt.dataroot, opt.fold + 'B')
 
         self.A_paths = make_dataset(self.dir_A)
         self.B_paths = make_dataset(self.dir_B)
@@ -28,25 +28,15 @@ class UnalignedDataset(BaseDataset):
         index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
         # print('(A, B) = (%d, %d)' % (index_A, index_B))
-        A_img = Image.open(A_path).convert('RGB')
-        B_img = Image.open(B_path).convert('RGB')
+        A_audio = default_loader(A_path)
+        B_audio = default_loader(B_path)
 
-        A = self.transform(A_img)
-        B = self.transform(B_img)
-        if self.opt.which_direction == 'BtoA':
-            input_nc = self.opt.output_nc
-            output_nc = self.opt.input_nc
-        else:
-            input_nc = self.opt.input_nc
-            output_nc = self.opt.output_nc
+        A = self.transform(A_audio)
+        B = self.transform(B_audio)
 
-        if input_nc == 1:  # RGB to gray
-            tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
-            A = tmp.unsqueeze(0)
+        assert A.size(-1)==self.opt.audio_sizes['n_time_bins']
+        assert B.size(-1)==self.opt.audio_sizes['n_time_bins']
 
-        if output_nc == 1:  # RGB to gray
-            tmp = B[0, ...] * 0.299 + B[1, ...] * 0.587 + B[2, ...] * 0.114
-            B = tmp.unsqueeze(0)
         return {'A': A, 'B': B,
                 'A_paths': A_path, 'B_paths': B_path}
 

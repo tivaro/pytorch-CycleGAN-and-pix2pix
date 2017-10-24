@@ -6,6 +6,10 @@ from PIL import Image
 
 
 class SingleDataset(BaseDataset):
+
+    def __init__(self, *a, **k):
+        raise NotImplementedError("Not implemented in this branch!")
+
     def initialize(self, opt):
         self.opt = opt
         self.root = opt.dataroot
@@ -21,14 +25,6 @@ class SingleDataset(BaseDataset):
         A_path = self.A_paths[index]
         A_img = Image.open(A_path).convert('RGB')
         A = self.transform(A_img)
-        if self.opt.which_direction == 'BtoA':
-            input_nc = self.opt.output_nc
-        else:
-            input_nc = self.opt.input_nc
-
-        if input_nc == 1:  # RGB to gray
-            tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
-            A = tmp.unsqueeze(0)
 
         return {'A': A, 'A_paths': A_path}
 

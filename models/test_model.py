@@ -6,6 +6,10 @@ from . import networks
 
 
 class TestModel(BaseModel):
+
+    def __init__(self, *a, **k):
+        raise NotImplementedError("Not implemented in this branch!")
+
     def name(self):
         return 'TestModel'
 

@@ -10,6 +10,10 @@ from . import networks
 
 
 class Pix2PixModel(BaseModel):
+
+    def __init__(self, *a, **k):
+        raise NotImplementedError("Not implemented in this branch!")
+
     def name(self):
         return 'Pix2PixModel'
 

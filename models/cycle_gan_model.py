@@ -19,25 +19,25 @@ class CycleGANModel(BaseModel):
         BaseModel.initialize(self, opt)
 
         nb = opt.batchSize
-        size = opt.fineSize
-        self.input_A = self.Tensor(nb, opt.input_nc, size, size)
-        self.input_B = self.Tensor(nb, opt.output_nc, size, size)
+        a_size = opt.audio_sizes
+        self.input_A = self.Tensor(nb, a_size['n_channels'], a_size['n_freq_bins'], a_size['n_time_bins'])
+        self.input_B = self.Tensor(nb, a_size['n_channels'], a_size['n_freq_bins'], a_size['n_time_bins'])
 
         # load/define networks
         # The naming conversion is different from those used in the paper
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
 
-        self.netG_A = networks.define_G(opt.input_nc, opt.output_nc,
+        self.netG_A = networks.define_G(a_size['n_channels'], a_size['n_channels'],
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
-        self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
+        self.netG_B = networks.define_G(a_size['n_channels'], a_size['n_channels'],
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
 
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
+            self.netD_A = networks.define_D(a_size['n_channels'], opt.ndf,
                                             opt.which_model_netD,
                                             opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
-            self.netD_B = networks.define_D(opt.input_nc, opt.ndf,
+            self.netD_B = networks.define_D(a_size['n_channels'], opt.ndf,
                                             opt.which_model_netD,
                                             opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
         if not self.isTrain or opt.continue_train:
@@ -150,6 +150,8 @@ class CycleGANModel(BaseModel):
         self.loss_G_B = self.criterionGAN(pred_fake, True)
         # Forward cycle loss
         self.rec_A = self.netG_B.forward(self.fake_B)
+        # print(self.rec_A.size(), self.real_A.size())
+        # torch.Size([1, 2, 256, 176]) torch.Size([1, 2, 256, 175])
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
         # Backward cycle loss
         self.rec_B = self.netG_A.forward(self.fake_A)
